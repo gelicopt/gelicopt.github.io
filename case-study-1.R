@@ -1,4 +1,3 @@
-# Here, we read a gesture elicitation dataset, and try to derive a vocabulary (given different constraints)
 
 rm(list=ls()) # Clean up R's memory
 
