@@ -6,4 +6,4 @@ The repository contains the following folders:
 They have been generated using the Hungarian algorithm over a large number of simulated studies. 
 - *datasets*: datasets used for our case studies
 
-For further information, please visit our project page at [gelicopt.github.io](http://gelicopt.github.io)
+For further information about how to use the code, please visit our project page at [gelicopt.github.io](http://gelicopt.github.io)
