@@ -23,8 +23,12 @@ mode_sign_mapper = function(ess, filter = NA) {
   names(result) = row.names(ess)
   voc <- filter_vocabulary(ess, result, filter)
 
-  return(data.frame(ref = 1:length(voc), sign = voc))
+  df <- data.frame(refname = rownames(ess), ref = 1:length(voc), sign = voc)
+  rownames(df) <- NULL
+  
+  return(df)
 }
+
 #
 # This sign mapper assigns a random sign to each referent. It is silly but might come useful for testing.
 # It guarantees that signs are not duplicated.
@@ -46,7 +50,10 @@ random_sign_mapper = function(ess, filter = NA) {
   names(result) = row.names(ess)
   voc <- filter_vocabulary(ess, result, filter)
 
-  return(data.frame(ref = 1:length(voc), sign = voc))
+  df <- data.frame(refname = rownames(ess), ref = 1:length(voc), sign = voc)
+  rownames(df) <- NULL
+  
+  return(df)
 }
 
 #
@@ -96,7 +103,10 @@ hungarian_sign_mapper = function(ess, filter = NA) {
   
   voc <- filter_vocabulary(ess, result, filter)
 
-  return(data.frame(ref = 1:length(voc), sign = voc))
+  df <- data.frame(refname = rownames(ess), ref = 1:length(voc), sign = voc)
+  rownames(df) <- NULL
+
+  return(df)
 }
 
 # This sign mapper is based on Wobbrock et al. (2005, 2009) conflict resolution approach.
@@ -162,7 +172,11 @@ wobbrock_sign_mapper <- function(ess = NA, filter = NA){
     names(result) = row.names(ess)
     
     voc <- filter_vocabulary(ess, result, filter)
-    return(data.frame(ref = 1:length(voc), sign = voc))
+
+    df <- data.frame(refname = rownames(ess), ref = 1:length(voc), sign = voc)
+    rownames(df) <- NULL
+
+    return(df)
 }
 
 

@@ -1,14 +1,12 @@
 # Evaluates the percentage of proposals that match a given sign mapping set (mappings)
 # This corresponds to the "training" (overfitted) guessability score 
+# This implementation accounts for the fact that multiple signs can be assigned to a referent
 guessability <- function(mappings, proposals){
-    map <- mappings[,2] # I take the second column of the frame that includes the actual sign names
+    scores <- mapply(function(ref){
+        sum(proposals[ref,] %in% mappings[mappings[,2] == ref,][,3])
+    }, 1:nrow(proposals))
 
-    individal.agreement <- function(sign, proposals){
-        correct <- proposals[proposals == sign]
-        return(length(correct)/length(proposals))
-    }
-    
-    mean(mapply(individal.agreement, map, as.data.frame(t(proposals))))
+    mean(scores)/ncol(proposals)
 }
 
 # Cross validation guessability score based on the Leave-One-Out Cross-Validation method
@@ -16,8 +14,8 @@ guessability <- function(mappings, proposals){
 guessability.loocv <- function(proposals, mapper){
 	guess <- function(index){
 		mappings <- mapper(proposals[,-index])
-		guessability(mappings, proposals[,index])
-	}
+		guessability(mappings, as.data.frame(proposals[,index]))
+ 	}
 	
 	partial <- sapply(1:ncol(proposals), function(i) guess(i))
 	
@@ -47,4 +45,6 @@ guessability.evolution <- function(proposals, mapper){
 
   return(df)
 }
+
+
 

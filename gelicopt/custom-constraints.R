@@ -1,11 +1,12 @@
-# This code still needs some cleaning.
-
 #https://www.r-orms.org/mixed-integer-linear-programming/practicals/problem-course-assignment/
 library(dplyr)
 
 library(ompr) # Model library 
 library(ompr.roi) 
 library(ROI.plugin.glpk) # Model solver
+
+library(foreach)
+library(doParallel)
 
 results.matrix <- function(solution, n_referents, n_signs) {
   res = matrix(0, nrow = n_referents, ncol = n_signs)
@@ -102,12 +103,30 @@ createConstraints <- function(group_matrix, fast = TRUE){
 }
 
 
-# shareable_signs: Signs that can be part of multiple referents
-optimal_group_mapper <- function(ess, groupsPos = NULL, fast = TRUE){
+# 1. ess: a data frame with elicited sign proposals (rows: referents, columns: participants)
+# 2. signs: a vector of unique sings in ess (optional, it will be created if absent or NULL)
+# 3. legitimatePairs: a matrix of legitimate pairs of signs, where signs are identified by their positions in the signs vector.  
+#    If we omit it, the default value is NULL, and th emapper will allow multiple signs to be mapped to each referent. 
+#    If, instead, we assign it a NA value, then exactly one sign will be assigned to each referent (as with the Hungarian algorithm).
+# 4. maxRefConstraints: a matrix that specifies which signs can be mapped to more than one referent, and the maximum number of referents for each
+#    Again, signs are identified by their positions in the signs vector.
+#    if we omit it, the maximum number of referents will be one for all signs.
+# 5. aggregate: if TRUE, we aggregate constraints for faster optimization (otherwise, it may never terminate)
+custom_constraints_mapper <- function(ess, signs = NULL, legitimatePairs = NULL, maxRefConstraints = NULL, aggregate = TRUE){
   n_referents = nrow(ess)
-  all_signs = unique(c(t(ess)))
-  n_signs = length(all_signs)
 
+  if(is.null(signs)) signs = unique(c(t(ess)))
+  n_signs = length(signs)
+
+  # Identify which signs (exclusive_signs) can be assigned to a single referent
+  exclusive_signs <- 1:n_signs
+  if(!is.null(maxRefConstraints)) {
+    shareable_signs <- maxRefConstraints[,1]
+    exclusive_signs <- exclusive_signs[-c(shareable_signs)]
+  } else {
+    shareable_signs <- NULL
+  }
+  
   which.is.max <- function(x){
       if(max(x) < 0) return(0) # To deal with cases of non-available signs
       else return(which.max(x))
@@ -119,7 +138,7 @@ optimal_group_mapper <- function(ess, groupsPos = NULL, fast = TRUE){
   # Give a score to each sign/referent pairing. Here we use the number of times the sign has been proposed.
   for (r in 1:n_referents) {
       t <- table(t(ess[r,])) # signs proposed and their number of occurrences for that referent
-      match_scores[r, match(names(t), all_signs)] = t # report occurrences in the matrix
+      match_scores[r, match(names(t), signs)] = t # report occurrences in the matrix
   }
 
   # The MIP model
@@ -131,12 +150,22 @@ optimal_group_mapper <- function(ess, groupsPos = NULL, fast = TRUE){
     set_objective(sum_expr(match_scores[i, j] * assignment[i, j], i = 1:n_referents, j = 1:n_signs)) %>%
 
     # Each sign is assigned to at most one referent.
-    add_constraint(sum_expr(assignment[i, j], i = 1:n_referents) <= 1, j = 1:n_signs, .show_progress_bar = FALSE)
+    add_constraint(sum_expr(assignment[i, j], i = 1:n_referents) <= 1, j = exclusive_signs, .show_progress_bar = FALSE) #%>%
 
-  if(is.null(groupsPos)) {
+    # Those can be assigned to multiple referents.
+    if(!is.null(shareable_signs)){
+      for(k in shareable_signs){
+        maxRef <- maxRefConstraints[maxRefConstraints[,1]==k, 2]
+        model <- add_constraint(model, sum_expr(assignment[i, j], i = 1:n_referents) <= maxRef, j = k, .show_progress_bar = FALSE)
+      }
+   }
+
+    # add_constraint(sum_expr(assignment[i, j], i = 1:n_referents) <= 2, j = shareable_signs, .show_progress_bar = FALSE)
+
+  if(is.null(legitimatePairs)) {
     # Each referent is assigned to at least one sign
     model <- add_constraint(model, sum_expr(assignment[i, j], j = 1:n_signs) >= 1, i = 1:n_referents, .show_progress_bar = FALSE)
-  } else if(is.na(groupsPos)){
+  } else if(is.na(legitimatePairs)){
     # Each referent is assigned to exactly one sign
     model <- add_constraint(model, sum_expr(assignment[i, j], j = 1:n_signs) == 1, i = 1:n_referents, .show_progress_bar = FALSE)
   } else {
@@ -144,10 +173,10 @@ optimal_group_mapper <- function(ess, groupsPos = NULL, fast = TRUE){
     model <- add_constraint(model, sum_expr(assignment[i, j], j = 1:n_signs) >= 1, i = 1:n_referents, .show_progress_bar = FALSE)
 
     # But not all of them...
-    group_matrix <- getGroupMatrix(groupsPos, n_signs)
-    constraints <- createConstraints(group_matrix, fast)
-    for(constr in constraints){
-   #print(constr)   
+    group_matrix <- getGroupMatrix(legitimatePairs, n_signs)
+    constraints <- createConstraints(group_matrix, fast = aggregate)
+  
+    for(constr in constraints){ 
       model <- add_constraint(model, sum_expr(assignment[i, j], j = constr) <= 1, i = 1:n_referents, .show_progress_bar = FALSE)
     }
   }
@@ -157,15 +186,31 @@ optimal_group_mapper <- function(ess, groupsPos = NULL, fast = TRUE){
   solution <- get_solution(result, assignment[i,j])
   df <- solution[solution$value == 1,]
   
-  df$j <- all_signs[df$j] # map back the correct sign symbols
+  df$j <- signs[df$j] # map back the correct sign symbols
 
-  #df[order(df$i),]
-  
-  #all_signs[df[order(df$i),]$j]
-  df[order(df$i),2:3]
+  mappings <- df[order(df$i),2:3]
+  colnames(mappings) <- c("ref", "sign")
+  mappings <- cbind(refname = rownames(ess)[mappings[,1]], mappings) # there may be multiple rows per referent
+  rownames(mappings) <- NULL
 
-#  res <- results.matrix(get_solution(result, assignment[i,j]), n_referents, n_signs)
-
-#  res
+  return(mappings)
 }
+
+
+# Cross validation guessability score based on the Leave-One-Out Cross-Validation method
+# CoresNum: number of CPU cores to use in parallel 
+guessability.loocv <- function(proposals, signs = NULL, legitimatePairs = NULL, maxRefConstraints = NULL, CoresNum = 1){
+  guess <- function(index){
+    mappings <- custom_constraints_mapper(proposals[,-index], signs, legitimatePairs, maxRefConstraints = NULL, aggregate = TRUE)
+    guessability(mappings, as.data.frame(proposals[,index]))
+  }
+
+  #Parallel: https://nceas.github.io/oss-lessons/parallel-computing-in-r/parallel-computing-in-r.html
+  registerDoParallel(CoresNum)  # use multicore, set to the number of our cores
+  results <- foreach(pid = 1:ncol(proposals), .combine=cbind) %dopar% {
+    guess(pid)
+  }
+  
+  mean(results)
+} 
 
