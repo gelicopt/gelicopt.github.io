@@ -5185,7 +5185,7 @@ time &lt;- system.time({
   mappings &lt;- custom_constraints_mapper(locations_modalities, signs, legitimatePairs, maxRefConstraints)
 })
 cat(&quot;Time to complete the optimization (in sec): &quot;, time[[&quot;elapsed&quot;]], &quot;\n&quot;)</code></pre>
-<pre><code>## Time to complete the optimization (in sec):  43.136</code></pre>
+<pre><code>## Time to complete the optimization (in sec):  46.271</code></pre>
 <p>The time cost of optimization is considerable. It can take even longer if the number of signs becomes larger, and additional constraints are added. The <em>mappings</em> produced by this approach are as follows (scroll to see details):</p>
 <div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:200px; overflow-x: scroll; width:300px; ">
 <table class="table table-striped table-hover table-condensed" style="font-size: 14px; width: auto !important; ">
@@ -5658,10 +5658,10 @@ cat(&quot;Guessability =&quot;, guess, &quot;\n&quot;)</code></pre>
     guessability.loocv(locations_modalities, signs, legitimatePairs, maxRefConstraints, CoresNum = 4)
 })
 cat(&quot;Time to complete the cross-validation (in sec): &quot;, time[[&quot;elapsed&quot;]], &quot;\n&quot;)</code></pre>
-<pre><code>## Time to complete the cross-validation (in sec):  338.577</code></pre>
+<pre><code>## Time to complete the cross-validation (in sec):  349.167</code></pre>
 <pre class="r"><code>cat(&quot;LOOCV Guessability =&quot;, guess.loocv, &quot;\n&quot;)</code></pre>
 <pre><code>## LOOCV Guessability = 0.09090909</code></pre>
-<p>The cross-validation score has also increased but is still low. If we look for mappings with a higher guessability, we definitely need to increase our sample of participants. But even with more participants, any improvements are expected to remain below the training guessability score of <span class="math inline">\(~15\%\)</span> that we calculated above.</p>
+<p>The cross-validation score has also increased but is still low. If we look for mappings with a higher guessability, we definitely need to increase our sample of participants. But even with more participants, any improvements are expected to remain below the training guessability score of <span class="math inline">\(15.4\%\)</span> that we calculated above.</p>
 <p>The agreement analysis of <span class="citation">Tsandilas (2018)</span> for this study shows that there was no consensus among participants on the body location of on-skin gestures. In addition, consensus on the input modality was limited and largely due to the dominant use of slide gestures (“slide” alone was responsible for <span class="math inline">\(80\%\)</span> of all agreements on the input modality of gestures). Therefore, creating a guessable set of mappings between the signs of on-skin gestures and the above 33 referents may not be feasible.</p>
 </div>
 <div id="references" class="section level2 unnumbered">
