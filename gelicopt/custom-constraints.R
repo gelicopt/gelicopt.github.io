@@ -201,7 +201,7 @@ custom_constraints_mapper <- function(ess, signs = NULL, legitimatePairs = NULL,
 # CoresNum: number of CPU cores to use in parallel 
 guessability.loocv <- function(proposals, signs = NULL, legitimatePairs = NULL, maxRefConstraints = NULL, CoresNum = 1){
   guess <- function(index){
-    mappings <- custom_constraints_mapper(proposals[,-index], signs, legitimatePairs, maxRefConstraints = NULL, aggregate = TRUE)
+    mappings <- custom_constraints_mapper(proposals[,-index], signs, legitimatePairs, maxRefConstraints, aggregate = TRUE)
     guessability(mappings, as.data.frame(proposals[,index]))
   }
 

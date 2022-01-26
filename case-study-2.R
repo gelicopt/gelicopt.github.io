@@ -152,7 +152,7 @@ guess.training <- guessability(mappings, locations_modalities)
 cat("Observed training guessability = ", guess.training, "\n")
 
 time <- system.time({
-  guess.validation <- guessability.loocv(locations_modalities, signs, legitimatePairs, maxRefConstraint, CoresNum = 4)
+  guess.validation <- guessability.loocv(locations_modalities, signs, legitimatePairs, maxRefConstraints, CoresNum = 4)
 })
 
 cat("Time to complete the cross-validation (in sec): ", time[["elapsed"]], "\n")

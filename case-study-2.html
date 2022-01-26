@@ -5047,7 +5047,7 @@ index2
 </table>
 </div>
 <p><br />
-<strong>Step 3. Third, we specify the maximum number of referents to which a sign is mapped.</strong> By default, our optimization solver assumes that each individual sign can be mapped to no more than one referent. For this study, however, we want to capture the fact that the “slide” modality provides a richer set of possibilities. We focus here on binary sliding directions (upwards vs. downwards), so we allow for up to two referents to share the same “slide” sign.</p>
+<strong>Step 3. Third, we specify the maximum number of referents to which a sign is mapped.</strong> By default, our optimization solver assumes that each individual sign can be mapped to no more than one referent. For this study, however, we want to capture the fact that the “slide” modality provides a richer set of possibilities. We focus here on binary sliding directions (e.g., upwards vs. downwards), so we allow for up to two referents to share the same “slide” sign.</p>
 <pre class="r"><code> # Which signs (their index) have a slide modality?
 selectedSigns &lt;- which(getModality(signs) %in% c(&quot;slide&quot;))
 
@@ -5175,7 +5175,7 @@ As we mentioned earlier, for all other signs, the maximum number of referents to
 <ol style="list-style-type: decimal">
 <li><p>the <em>locations_modalities</em> data frame (from Step 1)</p></li>
 <li><p>the <em>signs</em> vector (from Step 2). If we omit it, the function will construct it as: <em>signs &lt;- unique(c(t(locations_modalities)))</em></p></li>
-<li><p>the <em>legitimatePairs</em> matrix (from Step 2), where indices correspond to sign positions in the <em>signs</em> vector. If we omit it, the default value is <em>NULL</em>, and th emapper will allow multiple signs to be mapped to each referent. If, instead, we assign it a <em>NA</em> value, then exactly one sign will be assigned to each referent (as with the Hungarian algorithm).</p></li>
+<li><p>the <em>legitimatePairs</em> matrix (from Step 2), where indices correspond to sign positions in the <em>signs</em> vector. If we omit it, the default value is <em>NULL</em>, and the mapper will allow multiple signs to be mapped to each referent. If, instead, we assign it a <em>NA</em> value, then exactly one sign will be assigned to each referent (as with the Hungarian algorithm).</p></li>
 <li><p>the <em>maxRefConstraints</em> matrix (from Step 3), where indices again correspond to sign positions in the <em>signs</em> vector. If we omit it, the maximum number of referents will be one for all signs.</p></li>
 </ol>
 <pre class="r"><code>source(&quot;gelicopt/custom-constraints.R&quot;) # Implementation of optimization with custom constraints
@@ -5185,7 +5185,7 @@ time &lt;- system.time({
   mappings &lt;- custom_constraints_mapper(locations_modalities, signs, legitimatePairs, maxRefConstraints)
 })
 cat(&quot;Time to complete the optimization (in sec): &quot;, time[[&quot;elapsed&quot;]], &quot;\n&quot;)</code></pre>
-<pre><code>## Time to complete the optimization (in sec):  43.049</code></pre>
+<pre><code>## Time to complete the optimization (in sec):  43.136</code></pre>
 <p>The time cost of optimization is considerable. It can take even longer if the number of signs becomes larger, and additional constraints are added. The <em>mappings</em> produced by this approach are as follows (scroll to see details):</p>
 <div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:200px; overflow-x: scroll; width:300px; ">
 <table class="table table-striped table-hover table-condensed" style="font-size: 14px; width: auto !important; ">
@@ -5647,7 +5647,7 @@ palm#scratch
 </table>
 </div>
 <p><br />
-If we compare these new mappings with the mappings produced by the Hungarian algorithm (see our earlier analysis), we observe that they are more consistent. For example, symmetrical signs like “Zoom-in” and “Zoom-out” are both assigned to the “forearm$slide” sign; “Undo” is a tap on the backhand or the wrist, and “Redo” is a slide or swipe on the palm and fingers. Such combinations make more sense from an interaction design perspective.</p>
+If we compare these new mappings with the mappings produced by the Hungarian algorithm (see our earlier analysis), we observe that they are more consistent. For example, symmetrical signs like “Zoom-in” and “Zoom-out” are both assigned to the “forearm#slide” sign; “Undo” is a tap on the backhand or the wrist, and “Redo” is a slide or swipe on the palm and fingers. Such combinations make more sense from an interaction design perspective.</p>
 <p><strong>Step 5: Finally, we evaluate guessability.</strong></p>
 <pre class="r"><code>guess &lt;- guessability(mappings, locations_modalities)
 cat(&quot;Guessability =&quot;, guess, &quot;\n&quot;)</code></pre>
@@ -5655,14 +5655,14 @@ cat(&quot;Guessability =&quot;, guess, &quot;\n&quot;)</code></pre>
 <p>Our observed (training) guessability has increased. This increase, however, may be largely due to overfitting, since mapping constraints are now more flexible. We assess the effect of overfitting with cross-validation. Cross-validation is now very computational expensive, because optimization is repeated 22 times (which is the number of participants). To accelerate it, we can specify a number of CPU cores to use in parallel (we use four cores below):</p>
 <pre class="r"><code>time &lt;- system.time({
   guess.loocv &lt;- # The implementation of this function is within the custom-constraints.R file
-    guessability.loocv(locations_modalities, signs, legitimatePairs, maxRefConstraint, CoresNum = 4)
+    guessability.loocv(locations_modalities, signs, legitimatePairs, maxRefConstraints, CoresNum = 4)
 })
 cat(&quot;Time to complete the cross-validation (in sec): &quot;, time[[&quot;elapsed&quot;]], &quot;\n&quot;)</code></pre>
-<pre><code>## Time to complete the cross-validation (in sec):  315.823</code></pre>
+<pre><code>## Time to complete the cross-validation (in sec):  338.577</code></pre>
 <pre class="r"><code>cat(&quot;LOOCV Guessability =&quot;, guess.loocv, &quot;\n&quot;)</code></pre>
-<pre><code>## LOOCV Guessability = 0.05922865</code></pre>
-<p>Unfortunately, the cross-validation score is extremely low. If we hope for mappings with a higher guessability, we definitely need to increase our sample of participants. However, we cannot again expect major improvements.</p>
-<p>The agreement analysis of <span class="citation">Tsandilas (2018)</span> for this study shows that there was no consensus among participants on the body location of on-skin gestures. In addition, consensus on the input modality was limited and largely due to the dominant use of slide gestures (“slide” alone was responsible for <span class="math inline">\(80\%\)</span> of all agreements on the input modality of gestures). Therefore, creating a guessable set of mappings between signs and our 33 referents may not be feasible.</p>
+<pre><code>## LOOCV Guessability = 0.09090909</code></pre>
+<p>The cross-validation score has also increased but is still low. If we look for mappings with a higher guessability, we definitely need to increase our sample of participants. But even with more participants, any improvements are expected to remain below the training guessability score of <span class="math inline">\(~15\%\)</span> that we calculated above.</p>
+<p>The agreement analysis of <span class="citation">Tsandilas (2018)</span> for this study shows that there was no consensus among participants on the body location of on-skin gestures. In addition, consensus on the input modality was limited and largely due to the dominant use of slide gestures (“slide” alone was responsible for <span class="math inline">\(80\%\)</span> of all agreements on the input modality of gestures). Therefore, creating a guessable set of mappings between the signs of on-skin gestures and the above 33 referents may not be feasible.</p>
 </div>
 <div id="references" class="section level2 unnumbered">
 <h2>References</h2>
